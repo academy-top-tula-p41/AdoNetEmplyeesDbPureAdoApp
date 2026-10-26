@@ -1,6 +1,7 @@
 ﻿using Microsoft.Data.SqlClient;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -222,6 +223,97 @@ namespace AdoNetEmplyeesDbPureAdoApp
             var result = command.ExecuteScalar();
 
             Console.WriteLine($"Count = {result}");
+        }
+        public static void ParametersExample(SqlCommand command)
+        {
+            Console.Write("Input city: ");
+            string city = Console.ReadLine();
+
+            command.CommandText = $@"INSERT INTO cities VALUES (@city)";
+
+            SqlParameter cityParemeter = new SqlParameter("@city", city);
+            command.Parameters.Add(cityParemeter);
+
+            command.ExecuteNonQuery();
+        }
+        public static void StoredProceduresExamples(SqlCommand command)
+        {
+            //command.CommandText = @"CREATE PROCEDURE InsertCity
+            //(
+            //	@title VARCHAR(50)
+            //)
+            //AS
+            //	INSERT INTO cities
+            //	VALUES
+            //	(@title)";
+
+            //    command.CommandText = @"CREATE PROCEDURE GetCities
+            //AS
+            //	SELECT * FROM cities";
+
+            //    command.ExecuteNonQuery();
+
+            //Console.Write("Input city's title: ");
+            //string cityTitle = Console.ReadLine();
+
+            //string storedProcedure = "InsertCity";
+            //command.CommandType = CommandType.StoredProcedure;
+            //command.CommandText = storedProcedure;
+
+            //SqlParameter parameter = new()
+            //{
+            //    ParameterName = "@title",
+            //    Value = cityTitle,
+            //};
+            //command.Parameters.Add(parameter);
+
+            //command.ExecuteNonQuery();
+
+            command.CommandText = "GetCities";
+            command.CommandType = CommandType.StoredProcedure;
+
+            using (SqlDataReader reader = command.ExecuteReader())
+            {
+                if (!reader.HasRows) return;
+
+                string header = $"{reader.GetName(0)}\t| {reader.GetName(1)}";
+                Console.WriteLine(header);
+                Console.WriteLine(new string('-', header.Length + 8));
+
+                while (reader.Read())
+                {
+                    int id = reader.GetInt32(0);
+                    string title = reader.GetString(1);
+                    Console.WriteLine($"{id}\t| {title}");
+                }
+            }
+        }
+        public static void TransactionsExample(SqlConnection connection, SqlCommand command)
+        {
+            SqlTransaction transaction = connection.BeginTransaction();
+            command.Transaction = transaction;
+            int result;
+
+            try
+            {
+                string cityTitle = "Orel";
+
+                command.CommandText = $"INSERT INTO cities VALUES ('{cityTitle}')";
+                result = command.ExecuteNonQuery();
+                Console.WriteLine($"First result = {result}");
+
+                cityTitle = "Ryazan";
+                command.CommandText = $"INSERT INTO cities VALUES ('{cityTitle}')";
+                result = command.ExecuteNonQuery();
+                Console.WriteLine($"Second result = {result}");
+
+                transaction.Commit();
+            }
+            catch (Exception ex)
+            {
+                transaction.Rollback();
+                Console.WriteLine(ex.Message);
+            }
         }
     }
 }
