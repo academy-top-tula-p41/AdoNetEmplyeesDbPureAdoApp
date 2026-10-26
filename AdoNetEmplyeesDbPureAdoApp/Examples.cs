@@ -315,5 +315,67 @@ namespace AdoNetEmplyeesDbPureAdoApp
                 Console.WriteLine(ex.Message);
             }
         }
+
+        public static void SelectWithJoinExample(SqlCommand command)
+        {
+            command.CommandText = @"SELECT e.name, 
+	   e.birth_date,
+	   e.salary,
+	   cm.name AS company,
+	   c.title AS city,
+	   p.title AS position
+	FROM employees AS e
+	JOIN companies AS cm
+		ON e.company_id = cm.id
+	JOIN cities AS c
+		ON cm.city_id = c.id
+	JOIN positions AS p
+		ON e.position_id = p.id";
+
+            /*
+             * name = 0
+             * birth_date = 1
+             * salary = 2
+             * company = 3
+             * city = 4
+             * position = 5
+            */
+
+            using (SqlDataReader reader = command.ExecuteReader())
+            {
+                if (!reader.HasRows) return;
+
+                string header = $"{reader.GetName(0)}\t";
+                header += $"| {reader.GetName(1)}\t";
+                header += $"| {reader.GetName(3)}\t";
+                header += $"| {reader.GetName(4)}\t\t";
+                header += $"| {reader.GetName(5)}\t\t";
+                header += $"| {reader.GetName(2)}";
+                Console.WriteLine(header);
+                Console.WriteLine(new string('-', header.Length + 5 * 8));
+
+                while (reader.Read())
+                {
+                    string name = reader.GetString(0);
+                    DateTime birthDate = reader.GetDateTime(1);
+                    string company = reader.GetString(3);
+                    string city = reader.GetString(4);
+                    string position = reader.GetString(5);
+                    decimal salary = reader.GetDecimal(2);
+
+                    string row = $"{name}\t";
+                    row += $"| {birthDate.ToShortDateString()}\t";
+                    row += $"| {company}\t";
+                    if (company.Length < 6) row += "\t";
+
+                    row += $"| {city}\t";
+                    row += $"| {position}\t";
+                    if (position.Length < 14) row += "\t";
+
+                    row += $"| {salary.ToString()}";
+                    Console.WriteLine(row);
+                }
+            }
+        }
     }
 }
